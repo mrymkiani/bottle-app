@@ -8,6 +8,7 @@ from .serializers import BottleSerializer, ShopItemSerializer, UserProfileSerial
 import math
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+import serializers
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371 
@@ -35,7 +36,13 @@ class BottleReadView(generics.RetrieveAPIView):
         if distance > bottle.range_km:
             return Response({"error": "You are out of range to read this bottle."}, status=403)
 
-        if user_profile.bottles_read_today >= user_profile.daily_read_limit:
+        if user_profile.bottles_read_today >= user_profile.daily_read_limit and user_profile.coins > 0:
+            user_profile.coins -= 1
+            user_profile.daily_read_limit +=1
+            user_profile.save()
+            
+            
+        if user_profile.bottles_read_today >= user_profile.daily_read_limit and user_profile.coins <= 0:
             return Response({"error": "Daily read limit reached."}, status=403)
 
         BottleReadLog.objects.create(user=request.user, bottle=bottle)
@@ -54,10 +61,7 @@ class BottleCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user_profile = UserProfile.objects.get(user=self.request.user)
-        # Check if user has enough coins to buy a bottle
-        # Assuming the price is calculated based on character_length and range_km
         price = serializer.validated_data['character_length'] * 10 + serializer.validated_data['range_km'] * 5
-        
         if user_profile.coins < price:
             raise serializers.ValidationError("Not enough coins to create a bottle.")
         
