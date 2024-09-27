@@ -8,7 +8,7 @@ from .serializers import BottleSerializer, ShopItemSerializer, UserProfileSerial
 import math
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-import serializers
+from rest_framework import serializers
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371 
